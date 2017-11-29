@@ -4,7 +4,6 @@ const path = require('path');
 
 const Koa = require('koa');
 const Router = require('koa-router');
-const views = require('koa-views');
 var cors = require('koa-cors');
 const statics = require('koa-static');
 const bodyParser = require('koa-bodyparser');
@@ -22,13 +21,19 @@ app.use(router.routes());
 
 app.use(bodyParser());
 
-router.get('/', function(ctx, next) {
-  ctx.redirect('/home');
+router.get('/', async function(ctx, next) {
+  await ctx.redirect('/home');
 });
 
+
+
+//最后的中间件404页面
+app.use(async function(ctx, next){
+	await ctx.redirect('/err');
+})
 
 
 // 开始服务并生成路由
 app.use(router.routes())
    .use(router.allowedMethods());
-app.listen(3030);
+app.listen(3000);
