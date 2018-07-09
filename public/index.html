@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <link rel="stylesheet" href="http://www.jq22.com/jquery/font-awesome.4.6.0.css">
+  <!-- <link href="css/foundation.min.css" rel="stylesheet" type="text/css"> -->
+  <link href="css/foundation-datepicker.css" rel="stylesheet" type="text/css">
+  <link href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./index.css">
+</head>
+<body>
+  <div class="contenWarp">
+      <h3>错误日志列表</h3>
+      <div class="row">
+        <div class="col-lg-8">
+          <table class="table">
+              <thead>
+                <tr>
+                  <th style="border: 0">Check in:
+                    <input type="text" class="span2" value="" id="dpd1">
+                  </th>
+                  <th style="border: 0">Check out:
+                    <input type="text" class="span2" value="" id="dpd2">
+                  </th>
+                </tr>
+              </thead>
+          </table>
+        </div>
+        <div class="col-lg-4">
+          <div class="input-group">
+            <input type="text" class="form-control" id="ukey" placeholder="项目类型搜索">
+            <span class="input-group-btn">
+              <button class="btn btn-default" id="goBtn" type="button">Go!</button>
+            </span>
+          </div><!-- /input-group -->
+        </div><!-- /.col-lg-6 -->
+      </div><!-- /.row -->
+      <p style="text-align: center"><span id="count"></span></p>
+      <hr>
+      <div class="ulList" id="ulList"></div>
+      <nav aria-label="...">
+          <ul class="pager">
+            <li class="previous" tarData="0"><a href="#"><span aria-hidden="true">&larr;</span> previous</a></li>
+            <li class="next" tarData="1"><a href="#">next <span aria-hidden="true">&rarr;</span></a></li>
+          </ul>
+      </nav>
+  </div>
+
+
+  <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="js/foundation-datepicker.js"></script>
+  <script src="js/locales/foundation-datepicker.zh-CN.js"></script>		
+  <script> 
+    var starDate = nearFutureDays(6).getTime();
+    var endDate = nearFutureDays(0).getTime();
+    var page = 1
+    window.onload = function() {
+      getApiData(page, starDate, endDate)
+      // 翻页
+      $(".pager li").on("click", function(e){
+        var eventName = $(e.target).parent('li').attr("tarData")
+        if (eventName == 0) {
+          page--
+        } else {
+          page++
+        }
+        getApiData(page, starDate, endDate)
+      })
+      // 按unkey查
+      $("#goBtn").on("click", function(){
+        getApiData(page, starDate, endDate)
+      })
+      dataPiker(page);
+    }
+    function getApiData(page, starDate, endDate) {
+      // console.log(new Date(starDate), new Date(endDate))
+      if (page < 1) {
+        page = 1
+      }
+      var ukey = $("#ukey").val().toString().trim()
+      $.ajax({
+        type: "GET",
+        url: "/getbug",
+        data: {prj: ukey, page: page, size: 10, starDate: starDate, endDate: endDate},
+        dataType: "json",
+        success: function(data){
+          if (data && data.code === 200) {
+            $('#count').html("结果条数：" + data.totalCount + " -- 当前页数：" + page)
+            initView(data.data)
+          }
+        }
+      });
+    }
+    function initView (data) {
+      console.log(data)
+      if (data.length < 1) {
+        $("#ulList").html('<h4 style="text-align: center">无匹配数据</h4>')
+        return
+      }
+      var htmlTpl = ''
+      for (var i = 0; i<data.length; i++) {
+        htmlTpl += `
+        <div class="panel panel-default">
+            <div class="panel-heading" data-toggle="collapse" data-target="#collapseExample${i}" aria-expanded="false" aria-controls="collapseExample${i}">${data[i].err}<span style="float:right">${timeForm(data[i].meta.updateAt)}</span>
+            </div>
+            <div class="collapse" id="collapseExample${i}">
+              <!-- List group -->
+              <ul class="list-group">
+                <li class="list-group-item">错误内容：${data[i].err}</li>
+                <li class="list-group-item">IP: ${data[i].head['x-forwarded-for']}</li>
+                <li class="list-group-item">${data[i].line}</li>
+                <li class="list-group-item">时间：${timeForm(data[i].meta.updateAt)}</li>
+                <li class="list-group-item">项目名：${data[i].unkey}</li>
+                <li class="list-group-item">错误文件：${data[i].path}</li>
+                <li class="list-group-item">浏览器类型：${data[i].head['user-agent']}</li>
+              </ul>
+            </div>  
+        </div>`
+      }
+
+      $("#ulList").html(htmlTpl)
+    }
+
+    function dataPiker (page) {
+      var nowTemp = new Date();
+      var now = new Date(nowTemp.getFullYear(), nowTemp.getMonth(), nowTemp.getDate(), 0, 0, 0, 0);
+      var checkin = $('#dpd1').fdatepicker({
+        format: 'yyyy-mm-dd',
+			  pickTime: true,
+        onRender: function (date) {
+          return date.valueOf() > now.valueOf() ? 'disabled' : '';
+        }
+      }).on('changeDate', function (ev) {
+        if (ev.date.valueOf() > checkout.date.valueOf()) {
+          var newDate = new Date(ev.date)
+          newDate.setDate(newDate.getDate() + 1);
+          checkout.update(newDate);
+        }
+        checkin.hide();
+        $('#dpd2')[0].focus();
+      }).data('datepicker');
+      var checkout = $('#dpd2').fdatepicker({
+        format: 'yyyy-mm-dd',
+			  pickTime: true,
+        onRender: function (date) {
+          return date.valueOf() <= checkin.date.valueOf() ? 'disabled' : '';
+        }
+      }).on('changeDate', function (ev) {
+        checkout.hide();
+        // console.log(" reday", getTimeNum($("#dpd1").val()), getTimeNum($("#dpd2").val()))
+        starDate = getTimeNum($("#dpd1").val())
+        endDate = getTimeNum($("#dpd2").val())
+        getApiData(page, starDate, endDate)
+      }).data('datepicker');
+    }
+
+
+    // 近几天
+    function nearFutureDays (num) {
+      var time = new Date()
+      time.setDate(time.getDate() - num)
+      var timeList = new Date(time)
+      return timeList
+    }
+    // 获得时间戳
+    function getTimeNum (dateTime) {
+      var time = new Date(dateTime)
+      time.setDate(time.getDate())
+      var timeList = new Date(time).getTime()
+      return timeList
+    }
+    function timeForm (value) {
+        if (!value) {
+          return ''
+        }
+        // 返回处理后的值
+        var time = new Date(parseInt(value))
+        var year = time.getFullYear()
+        var month = (time.getMonth() < 9 ? '0' : '') + (time.getMonth() + 1)
+        var day = (time.getDate() < 10 ? '0' : '') + time.getDate()
+        var hour = (time.getHours() < 10 ? '0' : '') + time.getHours()
+        var minute = (time.getMinutes() < 10 ? '0' : '') + time.getMinutes()
+        var second = (time.getSeconds() < 10 ? '0' : '') + time.getSeconds()
+        return year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second
+    }
+
+  </script>
+</body>
+</html>

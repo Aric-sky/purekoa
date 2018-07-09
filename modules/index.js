@@ -45,10 +45,20 @@ fundbug.pre('save', function(next) {
 })
 
 fundbug.statics = {
-  findAll: function(opt ={}, cb){
+  findAll: function(opt ={page: 0, size: 5}, cb){
+    const query = {}
+    opt.unkey ? query.unkey = opt.unkey : ''
+    if (opt.starDate && opt.endDate) {
+      query['meta.updateAt'] = {
+        "$gte": new Date(+opt.starDate),
+        "$lt": new Date(+opt.endDate)
+      }
+    }
     return this
-    .find(opt)
-    .sort('meta.updateAt')
+    .find(query)
+    .skip(opt.page * opt.size)
+    .limit(opt.size)
+    .sort({_id: -1})
     .exec(cb)
   }
 }

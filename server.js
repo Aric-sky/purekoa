@@ -25,28 +25,43 @@ app.use(router.routes());
 
 app.use(bodyParser());
 
-router.get('/', async (ctx, next) => {
+// app.set("view engine","ejs");
+//设置静态文件目录
+app.use(require('koa-static')(__dirname + '/public'))
+
+router.get('/getbug', async (ctx, next) => {
+  const query = ctx.query
+  let rdPage = 0
+  if (query.page) {
+    rdPage = (+query.page) - 1
+  }
   var opt = {
-    err: ctx.query.err,
-    path: ctx.query.path,
-    line: ctx.query.line,
-    head: ctx.header,
-    ip: ctx.request.ip || '',
-    unkey: ctx.query.key || (new Date()).getTime()
+    page: rdPage < 0 ? 0 : rdPage,
+    size: +query.size || 10
   }
-  var bugData = new fundbug(opt)
-  try{
-    bugData.save()
-    ctx.body = {
-      code: 1,
-      msg: 'suc'
+  // console.log(query.prj, 'query.prj ')
+  const constParm = {"unkey": query.prj, "starDate": query.starDate, "endDate": query.endDate}
+  opt = Object.assign({}, opt, constParm)
+  await fundbug.findAll(opt).then( async(data) => {
+    const countQuery = {}
+    constParm.unkey ? countQuery.unkey = constParm.unkey : ''
+    if (constParm.starDate && constParm.endDate) {
+      countQuery['meta.updateAt'] = {
+        "$gte": new Date(+constParm.starDate),
+        "$lt": new Date(+constParm.endDate)
+      }
     }
-  } catch(e) {
-    ctx.body = {
-      code: -1,
-      msg: e
-    }
-  }
+    await fundbug.count(countQuery, (err, counts) => {
+      if (!err) {
+        ctx.body = {
+          code: 200,
+          info: 'suc',
+          data: data,
+          totalCount: counts
+        }
+      }
+    })
+  })
 })
 
 app.use(router.routes())
