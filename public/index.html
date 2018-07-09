@@ -19,10 +19,10 @@
           <table class="table">
               <thead>
                 <tr>
-                  <th style="border: 0">Check in:
+                  <th style="border: 0">开始时间:
                     <input type="text" class="span2" value="" id="dpd1">
                   </th>
-                  <th style="border: 0">Check out:
+                  <th style="border: 0">结束时间:
                     <input type="text" class="span2" value="" id="dpd2">
                   </th>
                 </tr>
@@ -31,7 +31,7 @@
         </div>
         <div class="col-lg-4">
           <div class="input-group">
-            <input type="text" class="form-control" id="ukey" placeholder="项目类型搜索">
+            <input type="text" class="form-control" id="ukey" placeholder="按项目类型搜索">
             <span class="input-group-btn">
               <button class="btn btn-default" id="goBtn" type="button">Go!</button>
             </span>
@@ -57,6 +57,10 @@
   <script> 
     var starDate = nearFutureDays(6).getTime();
     var endDate = nearFutureDays(0).getTime();
+    var resCount = false;
+    var hasLoad = true
+    $('#dpd1').val(timeFormNoHour(starDate));
+    $('#dpd2').val(timeFormNoHour(endDate));
     var page = 1
     window.onload = function() {
       getApiData(page, starDate, endDate)
@@ -66,7 +70,7 @@
         if (eventName == 0) {
           page--
         } else {
-          page++
+          resCount && page++
         }
         getApiData(page, starDate, endDate)
       })
@@ -82,21 +86,30 @@
         page = 1
       }
       var ukey = $("#ukey").val().toString().trim()
-      $.ajax({
-        type: "GET",
-        url: "/getbug",
-        data: {prj: ukey, page: page, size: 10, starDate: starDate, endDate: endDate},
-        dataType: "json",
-        success: function(data){
-          if (data && data.code === 200) {
-            $('#count').html("结果条数：" + data.totalCount + " -- 当前页数：" + page)
-            initView(data.data)
+      if (hasLoad) {
+        hasLoad = false
+        $.ajax({
+          type: "GET",
+          url: "/getbug",
+          data: {prj: ukey, page: page, size: 10, starDate: starDate, endDate: endDate},
+          dataType: "json",
+          success: function(data){
+            hasLoad = true
+            if (data && data.code === 200) {
+              $('#count').html("结果条数：" + data.totalCount + " -- 当前页数：" + page)
+              initView(data.data)
+            }
           }
-        }
-      });
+        });
+      }
     }
     function initView (data) {
-      console.log(data)
+      // console.log(data)
+      if (data.length < 10) {
+        resCount = false
+      } else {
+        resCount = true
+      }
       if (data.length < 1) {
         $("#ulList").html('<h4 style="text-align: center">无匹配数据</h4>')
         return
@@ -113,10 +126,10 @@
                 <li class="list-group-item">错误内容：${data[i].err}</li>
                 <li class="list-group-item">IP: ${data[i].head['x-forwarded-for']}</li>
                 <li class="list-group-item">${data[i].line}</li>
-                <li class="list-group-item">时间：${timeForm(data[i].meta.updateAt)}</li>
+                <li class="list-group-item">时间：${data[i].meta.updateAt}</li>
                 <li class="list-group-item">项目名：${data[i].unkey}</li>
-                <li class="list-group-item">错误文件：${data[i].path}</li>
-                <li class="list-group-item">浏览器类型：${data[i].head['user-agent']}</li>
+                <li class="list-group-item">错误地址：${data[i].path}</li>
+                <li class="list-group-item">浏览器类型：${isPC(data[i].head['user-agent'])}</li>
               </ul>
             </div>  
         </div>`
@@ -130,7 +143,7 @@
       var now = new Date(nowTemp.getFullYear(), nowTemp.getMonth(), nowTemp.getDate(), 0, 0, 0, 0);
       var checkin = $('#dpd1').fdatepicker({
         format: 'yyyy-mm-dd',
-			  pickTime: true,
+			  pickTime: false,
         onRender: function (date) {
           return date.valueOf() > now.valueOf() ? 'disabled' : '';
         }
@@ -145,7 +158,7 @@
       }).data('datepicker');
       var checkout = $('#dpd2').fdatepicker({
         format: 'yyyy-mm-dd',
-			  pickTime: true,
+			  pickTime: false,
         onRender: function (date) {
           return date.valueOf() <= checkin.date.valueOf() ? 'disabled' : '';
         }
@@ -178,7 +191,7 @@
           return ''
         }
         // 返回处理后的值
-        var time = new Date(parseInt(value))
+        var time = new Date(value)
         var year = time.getFullYear()
         var month = (time.getMonth() < 9 ? '0' : '') + (time.getMonth() + 1)
         var day = (time.getDate() < 10 ? '0' : '') + time.getDate()
@@ -187,7 +200,77 @@
         var second = (time.getSeconds() < 10 ? '0' : '') + time.getSeconds()
         return year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second
     }
+    function timeFormNoHour (value) {
+        if (!value) {
+          return ''
+        }
+        // 返回处理后的值
+        var time = new Date(parseInt(value))
+        var year = time.getFullYear()
+        var month = (time.getMonth() < 9 ? '0' : '') + (time.getMonth() + 1)
+        var day = (time.getDate() < 10 ? '0' : '') + time.getDate()
+        return year + '-' + month + '-' + day
+    }
+    function isPC (userAgentInfo) {
+      var Agents = ["Android", "iPhone",
+                  "SymbianOS", "Windows Phone",
+                  "iPad", "iPod"];
+      var flag = "PC";
+      for (var v = 0; v < Agents.length; v++) {
+          if (userAgentInfo.indexOf(Agents[v]) > 0) {
+              flag = isIos(userAgentInfo);
+              break;
+          }
+      }
+      var res = browserType(userAgentInfo)
+      return flag + "端: " + res.broswer + " 版本号： " + res.version;
+    }
 
+    function isIos(u){
+      if (u.indexOf('Android') > -1 || u.indexOf('Linux') > -1) {
+          return "Android";
+      } else if (u.indexOf('iPhone') > -1) {
+          return "iPhone";
+      } else if (u.indexOf('iPad') > -1) {
+          return "iPad";
+      } else if (u.indexOf('Windows Phone') > -1) {
+          return "Windows Phone";
+      }else{
+          return "IOS"
+      }
+    }
+    function browserType(userAgent){
+      var sys = {};
+      var ua = navigator.userAgent.toLowerCase();
+      var s;
+      (s = ua.match(/edge\/([\d.]+)/)) ? sys.edge = s[1] :
+      (s = ua.match(/rv:([\d.]+)\) like gecko/)) ? sys.ie = s[1] :
+      (s = ua.match(/msie ([\d.]+)/)) ? sys.ie = s[1] :
+      (s = ua.match(/firefox\/([\d.]+)/)) ? sys.firefox = s[1] :
+      (s = ua.match(/chrome\/([\d.]+)/)) ? sys.chrome = s[1] :
+      (s = ua.match(/opera.([\d.]+)/)) ? sys.opera = s[1] :
+      (s = ua.match(/version\/([\d.]+).*safari/)) ? sys.safari = s[1] : 0;
+
+      if (sys.edge) return { broswer : "Edge", version : sys.edge };
+      if (sys.ie) return { broswer : "IE", version : sys.ie };
+      if (sys.firefox) return { broswer : "Firefox", version : sys.firefox };
+      if (sys.chrome) return { broswer : "Chrome", version : sys.chrome };
+      if (sys.opera) return { broswer : "Opera", version : sys.opera };
+      if (sys.safari) return { broswer : "Safari", version : sys.safari };
+      
+      return { broswer : "", version : "0" };
+    }
+    function getChromeVersion(userAgent) {
+        var arr = userAgent.split(' '); 
+        var chromeVersion = '';
+        for(var i=0;i < arr.length;i++){
+            if(/chrome/i.test(arr[i]))
+            chromeVersion = arr[i]
+        }
+        if(chromeVersion){
+            return "版本号：" + Number(chromeVersion.split('/')[1].split('.')[0]);
+        }
+    }
   </script>
 </body>
 </html>
