@@ -55,6 +55,9 @@
   <script src="js/foundation-datepicker.js"></script>
   <script src="js/locales/foundation-datepicker.zh-CN.js"></script>		
   <script> 
+    if (!getCookie("bkuname")) {
+      location.href = '/login.html'
+    }
     var starDate = nearFutureDays(6).getTime();
     var endDate = nearFutureDays(0).getTime();
     var resCount = false;
@@ -272,6 +275,16 @@
         if(chromeVersion){
             return "版本号：" + Number(chromeVersion.split('/')[1].split('.')[0]);
         }
+    }
+    function getCookie (name) {
+        var arr = document.cookie.split('; ')
+        for (var i = 0; i < arr.length; i++) {
+            var arr2 = arr[i].split('=')
+            if (arr2[0] == name) {
+                return arr2[1]
+            }
+        }
+        return ''
     }
   </script>
 </body>
