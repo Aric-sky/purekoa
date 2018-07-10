@@ -1,7 +1,6 @@
 'use strict'
 var mongoose = require('mongoose');
 
-//创建了一个schema结构。
 var fundbug = new mongoose.Schema({
   err: {
     type: String

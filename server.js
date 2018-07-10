@@ -25,8 +25,6 @@ app.use(router.routes());
 
 app.use(bodyParser());
 
-// app.set("view engine","ejs");
-//设置静态文件目录
 app.use(require('koa-static')(__dirname + '/public'))
 
 router.get('/getbug', async (ctx, next) => {
@@ -66,4 +64,4 @@ router.get('/getbug', async (ctx, next) => {
 
 app.use(router.routes())
    .use(router.allowedMethods());
-app.listen(8087);
+app.listen(8089);

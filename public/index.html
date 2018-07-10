@@ -241,7 +241,7 @@
     }
     function browserType(userAgent){
       var sys = {};
-      var ua = navigator.userAgent.toLowerCase();
+      var ua = userAgent.toLowerCase();
       var s;
       (s = ua.match(/edge\/([\d.]+)/)) ? sys.edge = s[1] :
       (s = ua.match(/rv:([\d.]+)\) like gecko/)) ? sys.ie = s[1] :
