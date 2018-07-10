@@ -76,6 +76,7 @@
       })
       // 按unkey查
       $("#goBtn").on("click", function(){
+        page = 1
         getApiData(page, starDate, endDate)
       })
       dataPiker(page);
@@ -167,6 +168,7 @@
         // console.log(" reday", getTimeNum($("#dpd1").val()), getTimeNum($("#dpd2").val()))
         starDate = getTimeNum($("#dpd1").val())
         endDate = getTimeNum($("#dpd2").val())
+        page = 1
         getApiData(page, starDate, endDate)
       }).data('datepicker');
     }
