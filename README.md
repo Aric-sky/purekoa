@@ -92,7 +92,7 @@ license_link: LICENSE
 
 # 🟢 What is Yi?,./'[!
 
-## 📌 Introduction 
+## Introduction 
 
 - 🤖 The Yi series models are the next generation of open source large language models trained from scratch by [01.AI](https://01.ai/).
 
@@ -106,7 +106,7 @@ license_link: LICENSE
 
 <div align="right"> [ <a href="#building-the-next-generation-of-open-source-and-bilingual-llms">Back to top ⬆️ </a> ] </div>
 
-## 🎯 Models
+## Introduction
 
 Yi models come in multiple sizes and cater to different use cases. You can also fine-tune Yi models to meet your specific requirements. 
 
